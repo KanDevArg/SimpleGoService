@@ -13,7 +13,7 @@ type QuoteService interface {
 
 // Service interface implementation for "quotesDataSource" type.
 func (qdts quotesDataSource) GetRandomQuote() quote {
-	idx := rand.Intn(len(qs.quotes))
+	idx := rand.Intn(len(qdts.quotes))
 	return qdts.quotes[idx]
 }
 

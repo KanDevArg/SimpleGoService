@@ -1,24 +1,31 @@
-package main
+package middleware
 
 import (
 	"net/http"
 	"time"
 
+	log "github.com/op/go-logging"
 	"golang.org/x/time/rate"
 )
 
-// Middleware
-type middleware func(http.Handler) http.Handler
+var (
+	loggerMw = log.MustGetLogger("middleware")
+)
 
-func loggingMiddleware(next http.Handler) http.Handler {
+// Middleware ...
+type Middleware func(http.Handler) http.Handler
+
+// LoggingMiddleware ...
+func LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		next.ServeHTTP(w, r)
-		logger.Infof("Request completed in %d ms", time.Since(start).Microseconds())
+		loggerMw.Infof("Request completed in %d ms", time.Since(start).Microseconds())
 	})
 }
 
-func rateLimiter(limit int) middleware {
+// RateLimiter ...
+func RateLimiter(limit int) Middleware {
 	return func(next http.Handler) http.Handler {
 		limiter := rate.NewLimiter(1, 200)
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -28,7 +35,7 @@ func rateLimiter(limit int) middleware {
 				e := http.StatusText(http.StatusTooManyRequests)
 				w.Write([]byte(e))
 
-				logger.Warningf("Request from %s dropped (rate-limited)", r.RemoteAddr)
+				loggerMw.Warningf("Request from %s dropped (rate-limited)", r.RemoteAddr)
 				return
 			}
 			next.ServeHTTP(w, r)
@@ -36,7 +43,8 @@ func rateLimiter(limit int) middleware {
 	}
 }
 
-func combineHandlers(root http.Handler, mwf ...middleware) (handler http.Handler) {
+// CombineHandlers ...
+func CombineHandlers(root http.Handler, mwf ...Middleware) (handler http.Handler) {
 	handler = root
 	for _, m := range mwf {
 		handler = m(handler)

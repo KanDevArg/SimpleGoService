@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	mw "github.com/kandevarg/SimpleGoService/middleware"
 	quotes "github.com/kandevarg/SimpleGoService/quotes"
 	log "github.com/op/go-logging"
 )
@@ -19,7 +20,7 @@ func main() {
 	}
 
 	root := createHTTPHandler(quoteService)
-	handler := combineHandlers(root, rateLimiter(200), loggingMiddleware)
+	handler := mw.CombineHandlers(root, mw.RateLimiter(2), mw.LoggingMiddleware)
 
 	logger.Info("Starting server on port 8080...")
 	logger.Fatal(http.ListenAndServe(":8080", handler))
